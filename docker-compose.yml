@@ -5,10 +5,14 @@ services:
     image: mysql:latest
     environment:
       MYSQL_ROOT_PASSWORD: "password"
+      MYSQL_DATABASE: "automessagesender"
     ports:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - automessagesender
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -19,22 +23,42 @@ services:
       MYSQL_ROOT_PASSWORD: "password"
     ports:
       - "8080:80"
+    networks:
+      - automessagesender
 
   redis:
     image: redis/redis-stack:latest
-
     ports:
       - "6379:6379"
       - "8001:8001"
     volumes:
       - redis_data:/data
+    networks:
+      - automessagesender
 
   rabbitmq:
     image: rabbitmq:3-management
     ports:
       - "5672:5672"
       - "15672:15672"
+    networks:
+      - automessagesender
+
+  scheduledmessenger:
+    build:
+      context: ./scheduledmessenger
+      dockerfile: Dockerfile
+    depends_on:
+      - mysql
+      - redis
+      - rabbitmq
+    networks:
+      - automessagesender
 
 volumes:
   db_data:
   redis_data:
+
+networks:
+  automessagesender:
+    external: true
