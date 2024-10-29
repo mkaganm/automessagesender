@@ -1,13 +1,13 @@
 # Makefile
 
-.PHONY: help up down restart build logs ps clean prune reload
+.PHONY: help up down restart build logs ps clean prune reload create-network
 
 help: ## Show help information.
 	@echo "Available commands:"
 	@awk 'BEGIN {FS = ":.*?##"; printf "\nUsage:\n"} /^[a-zA-Z0-9_-]+:.*?##/ { printf "  make %-10s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 up: ## Starts the services.
-	docker-compose up -d
+	docker-compose up --build -d
 
 down: ## Stops and removes the containers.
 	docker-compose down
@@ -31,3 +31,6 @@ clean: ## Cleans up all containers, networks, volumes, and images.
 
 prune: ## Prunes the Docker system (WARNING: removes unused data).
 	docker system prune -af --volumes
+
+create-network: ## Create docker network
+	docker network create automessagesender
