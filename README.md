@@ -7,3 +7,7 @@ and sending status, ensuring each message is sent only once.
 Additionally, it will cache the messageId values and sending times of 
 sent messages in Redis. The project includes APIs to 
 control the automatic message sending and to retrieve sent messages.
+
+---
+
+![](https://raw.githubusercontent.com/mkaganm/automessagesender/refs/heads/master/img.png)
