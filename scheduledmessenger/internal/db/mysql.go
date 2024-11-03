@@ -1,7 +1,6 @@
 package db
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -12,20 +11,10 @@ import (
 )
 
 type MySQLClient struct {
-	DB *gorm.DB
+	db *gorm.DB
 }
 
-var (
-	ErrDSNNotProvided     = errors.New("MySQL DSN not provided")
-	ErrMySQLConnection    = errors.New("failed to connect to MySQL")
-	ErrPingFailed         = errors.New("failed to ping MySQL server")
-	ErrReconnectionFailed = errors.New("failed to reconnect to MySQL")
-	ErrDBCloseFailed      = errors.New("failed to close MySQL connection")
-)
-
-// NewMySQLClient initializes a new MySQLClient instance.
-// It gets the DSN directly from the environment variable.
-func NewMySQLClient() (*MySQLClient, error) {
+func CreateClient() (*MySQLClient, error) {
 	dsn := os.Getenv("MYSQL_DSN")
 	if dsn == "" {
 		return nil, ErrDSNNotProvided
@@ -49,12 +38,12 @@ func NewMySQLClient() (*MySQLClient, error) {
 
 	log.Println("MySQL connection established successfully")
 
-	return &MySQLClient{DB: db}, nil
+	return &MySQLClient{db: db}, nil
 }
 
 // Reconnect checks the connection and reconnects if needed
 func (client *MySQLClient) Reconnect() error {
-	sqlDB, err := client.DB.DB()
+	sqlDB, err := client.db.DB()
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrPingFailed, err)
 	}
@@ -70,7 +59,7 @@ func (client *MySQLClient) Reconnect() error {
 		if err != nil {
 			return fmt.Errorf("%w: %v", ErrReconnectionFailed, err)
 		}
-		client.DB = db
+		client.db = db
 	}
 
 	return nil
@@ -78,7 +67,7 @@ func (client *MySQLClient) Reconnect() error {
 
 // Close terminates the database connection
 func (client *MySQLClient) Close() error {
-	sqlDB, err := client.DB.DB()
+	sqlDB, err := client.db.DB()
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrDBCloseFailed, err)
 	}
@@ -91,35 +80,35 @@ func (client *MySQLClient) Create(value interface{}) error {
 	if err := client.Reconnect(); err != nil {
 		return err
 	}
-	return client.DB.Create(value).Error
+	return client.db.Create(value).Error
 }
 
 func (client *MySQLClient) Find(value interface{}, conditions ...interface{}) error {
 	if err := client.Reconnect(); err != nil {
 		return err
 	}
-	return client.DB.Find(value, conditions...).Error
+	return client.db.Find(value, conditions...).Error
 }
 
 func (client *MySQLClient) First(value interface{}, conditions ...interface{}) error {
 	if err := client.Reconnect(); err != nil {
 		return err
 	}
-	return client.DB.First(value, conditions...).Error
+	return client.db.First(value, conditions...).Error
 }
 
 func (client *MySQLClient) Update(value interface{}) error {
 	if err := client.Reconnect(); err != nil {
 		return err
 	}
-	return client.DB.Save(value).Error
+	return client.db.Save(value).Error
 }
 
 func (client *MySQLClient) Delete(value interface{}, conditions ...interface{}) error {
 	if err := client.Reconnect(); err != nil {
 		return err
 	}
-	query := client.DB
+	query := client.db
 	if len(conditions) > 0 {
 		query = query.Where(conditions[0], conditions[1:]...)
 	}
@@ -130,7 +119,7 @@ func (client *MySQLClient) RawQuery(query string, values ...interface{}) (*gorm.
 	if err := client.Reconnect(); err != nil {
 		return nil, err
 	}
-	result := client.DB.Raw(query, values...)
+	result := client.db.Raw(query, values...)
 	return result, result.Error
 }
 
@@ -139,5 +128,5 @@ func (client *MySQLClient) Query() *gorm.DB {
 		log.Printf("Failed to reconnect to MySQL: %v", err)
 		return nil
 	}
-	return client.DB
+	return client.db
 }
