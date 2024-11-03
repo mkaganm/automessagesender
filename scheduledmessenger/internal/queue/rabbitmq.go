@@ -1,12 +1,9 @@
 package queue
 
 import (
-	"errors"
+	"github.com/streadway/amqp"
 	"log"
 	"os"
-	"scheduledmessenger/internal/message"
-
-	"github.com/streadway/amqp"
 )
 
 type RabbitMQClient struct {
@@ -14,13 +11,7 @@ type RabbitMQClient struct {
 	ch   *amqp.Channel
 }
 
-var (
-	ErrEnvVarNotSet = errors.New("RABBITMQ_URL environment variable is not set")
-	ErrConnFailed   = errors.New("failed to connect to RabbitMQ")
-	ErrChanFailed   = errors.New("failed to open a channel")
-)
-
-func NewRabbitMQClient() (*RabbitMQClient, error) {
+func CreateQueueClient() (*RabbitMQClient, error) {
 	url := os.Getenv("RABBITMQ_URL")
 	if url == "" {
 		return nil, ErrEnvVarNotSet
@@ -66,12 +57,11 @@ func (r *RabbitMQClient) Reconnect() error {
 	return nil
 }
 
-func (r *RabbitMQClient) PublishMessage(msg message.Message, queueName string) error {
+func (r *RabbitMQClient) PublishMessage(msgContext []byte, queueName string) error {
 	if err := r.Reconnect(); err != nil {
 		return err
 	}
 
-	body := msg.Context
 	err := r.ch.Publish(
 		"",        // default exchange
 		queueName, // routing key (queue name)
@@ -79,7 +69,7 @@ func (r *RabbitMQClient) PublishMessage(msg message.Message, queueName string) e
 		false,
 		amqp.Publishing{
 			ContentType: "text/plain",
-			Body:        []byte(body),
+			Body:        msgContext,
 		},
 	)
 
