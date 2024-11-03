@@ -1,9 +1,9 @@
 package message
 
 import (
+	"go.uber.org/dig"
 	"log"
 	"scheduledmessenger/internal/db"
-	"sync"
 )
 
 // Repository represents the message repository with a shared MySQLClient instance
@@ -11,25 +11,24 @@ type Repository struct {
 	client *db.MySQLClient
 }
 
+type RepositoryParams struct {
+	dig.In
+	DBClient *db.MySQLClient
+}
+
 var (
 	repoInstance *Repository
-	once         sync.Once
 )
 
-// InitializeRepository sets up the singleton instance of Repository
-func InitializeRepository() {
-	once.Do(func() {
-		// Create the Repository instance with the shared MySQLClient
-		repoInstance = &Repository{
-			client: db.GetInstance(),
-		}
-	})
+// CreateRepository sets up the singleton instance of Repository
+func CreateRepository(p RepositoryParams) *Repository {
+	return &Repository{client: p.DBClient}
 }
 
 // GetRepository returns the singleton instance of Repository
 func GetRepository() *Repository {
 	if repoInstance == nil {
-		log.Fatal("Repository not initialized. Call InitializeRepository() first.")
+		log.Fatal("Repository not initialized. Call CreateRepository() first.")
 	}
 	return repoInstance
 }
